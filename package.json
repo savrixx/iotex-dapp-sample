@@ -14,7 +14,8 @@
     "export": "next build && next export",
     "start": "next start",
     "test": "concurrently \"yarn start \" \"cypress open\"",
-    "test:ci": "cypress run --headless"
+    "test:ci": "cypress run --headless",
+    "db:pull": "prisma db pull; prisma generate"
   },
   "dependencies": {
     "@ethersproject/abstract-signer": "^5.6.0",
@@ -33,6 +34,7 @@
     "@mantine/prism": "^4.1.4",
     "@mantine/spotlight": "^4.1.4",
     "@metamask/jazzicon": "^2.0.0",
+    "@prisma/client": "^4.1.0",
     "@smartgraph/core": "0.1.83",
     "@smartgraph/plugins": "0.2.2",
     "@tanstack/react-table": "^8.2.6",
@@ -44,6 +46,7 @@
     "@types/prop-types": "^15.7.5",
     "@types/reflect-metadata": "^0.1.0",
     "@types/uuid": "^8.3.4",
+    "@w3bstream/sdk": "^0.0.6",
     "@web3-react/core": "^6.1.9",
     "@web3-react/injected-connector": "^6.0.7",
     "axios": "^0.21.1",
@@ -77,6 +80,7 @@
     "react-query": "^3.34.19",
     "react-tiny-virtual-list": "^2.2.0",
     "reflect-metadata": "^0.1.13",
+    "siwe": "^1.1.6",
     "sleep-promise": "^9.1.0",
     "superjson": "^1.8.1",
     "tabler-icons-react": "^1.45.0",

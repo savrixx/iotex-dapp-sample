@@ -4,6 +4,7 @@
 import superjson from 'superjson';
 import { createRouter } from '../createRouter';
 import { templateRouter } from './template';
+import { AuthRouter } from './auth';
 
 /**
  * Create your application's root router
@@ -28,6 +29,7 @@ export const appRouter = createRouter()
       return 'ok';
     }
   })
-  .merge('dev.', templateRouter);
+  .merge('dev.', templateRouter)
+  .merge('auth.', AuthRouter);
 
 export type AppRouter = typeof appRouter;

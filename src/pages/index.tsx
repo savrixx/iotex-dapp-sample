@@ -1,10 +1,13 @@
 import React, { useEffect } from 'react';
-import { createStyles, Container, Text, Button, Group, useMantineTheme } from '@mantine/core';
+import { createStyles, Container, Text, Button, Group, useMantineTheme, Image, Avatar, Box, Checkbox, CheckboxGroup, Divider, Center } from '@mantine/core';
 import MainLayout from '@/components/Layout';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../store';
-import { LanguageSwitch } from '@/components/LanguageSwitch';
-import { helper } from '@/lib/helper';
+import { useLocalObservable, observer } from 'mobx-react-lite';
+import { SiweMessage } from 'siwe';
+import { trpc } from '@/lib/trpc';
+import { useRouter } from 'next/router';
+import { PromiseState } from '../store/standard/PromiseState';
 
 const BREAKPOINT = '@media (max-width: 755px)';
 
@@ -82,52 +85,72 @@ const useStyles = createStyles((theme) => ({
   }
 }));
 
-export default function HeroTitle() {
+export const IndexPage = observer(() => {
   const { user, god } = useStore();
   const { classes, cx } = useStyles();
-  const theme = useMantineTheme();
   const { t } = useTranslation();
+  const utils = trpc.useContext();
+  const router = useRouter();
+
+  const store = useLocalObservable(() => ({
+    async signMessage() {
+      const address = god.currentNetwork.account;
+      const message = await utils.client.query('auth.sign-message', { address });
+      const signature = await god.currentNetwork.signMessage(message);
+      await utils.client.mutation('auth.verify', {
+        message,
+        signature,
+        data: {
+          client_id: String(router.query.clientId),
+          providers: store.providers
+        }
+      });
+    },
+    providers: ['Metapebble'] as string[],
+    app: new PromiseState({
+      async function() {
+        console.log(router.query);
+        if (!router.query.clientId) {
+          throw new Error('Client ID missing');
+        }
+        const client = await utils.client.query('auth.app', { clientId: String(router.query.clientId) });
+        return client;
+      }
+    }),
+    get status() {
+      return {
+        disabled: store.providers.length == 0
+      };
+    }
+  }));
 
   useEffect(() => {
-    user.enableNetworkChecker(window?.location?.pathname, [4689]);
+    store.app.call();
   }, []);
 
   return (
     <MainLayout>
       <div className={classes.wrapper}>
         <Container size={700} className={classes.inner}>
-          <h1 className={classes.title}>
-            {t('a')}{' '}
-            <Text component="span" variant="gradient" gradient={{ from: 'blue', to: 'cyan' }} inherit>
-              {t('next-generation')}
-            </Text>{' '}
-            {t('dapp-dev-framework')}
-          </h1>
-
-          <Text className={classes.description} color="dimmed">
-            {t('tip')}
-          </Text>
-
+          <Center>
+            <Avatar src={store.app.value?.logo} />
+            <Text ml="sm" size="lg">
+              {store.app.value?.name}
+            </Text>
+          </Center>
+          <Divider my="lg" />
+          <CheckboxGroup value={store.providers} orientation="vertical" label="Select provider" description="This is anonymous" onChange={(e) => (store.providers = e)} required>
+            <Checkbox value="Metapebble" label="Metapebble" />
+            <Checkbox value="other" label="..." />
+          </CheckboxGroup>
           <Group className={classes.controls}>
-            <Button size="xl" className={classes.control} variant="gradient" gradient={{ from: 'blue', to: 'cyan' }}>
-              {t('get-started')}
+            <Button size="xl" disabled={store.status.disabled} className={classes.control} variant="gradient" gradient={{ from: 'blue', to: 'cyan' }} onClick={() => store.signMessage()}>
+              {t('authorize')}
             </Button>
-
-            <Button
-              component="a"
-              href="https://github.com/iotexproject/iotex-dapp-sample"
-              size="xl"
-              variant="outline"
-              className={cx(classes.control, classes.githubControl)}
-              color={theme.colorScheme === 'dark' ? 'gray' : 'dark'}
-            >
-              GITHUB
-            </Button>
-
-            <LanguageSwitch></LanguageSwitch>
           </Group>
         </Container>
       </div>
     </MainLayout>
   );
-}
+});
+export default IndexPage;

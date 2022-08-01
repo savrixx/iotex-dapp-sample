@@ -13,6 +13,7 @@ import { CallParams } from '../../../type';
 import { GodStore } from '../god';
 import { helper } from '../../lib/helper';
 import DataLoader from 'dataloader';
+import { hooks } from '../../lib/hooks';
 
 export class EthNetworkState implements NetworkState {
   god: GodStore;
@@ -49,11 +50,14 @@ export class EthNetworkState implements NetworkState {
       chain.provider = new JsonRpcProvider(chain.rpcUrl);
       chain.multiCall = new MulticallProvider();
       chain.multiCall.provider = chain.provider;
+      //@ts-ignore
       chain.multiCall.multicall = { address: chain.info.multicallAddr, block: 0 };
+      //@ts-ignore
       chain.multiCall.multicall2 = { address: chain.info.multicall2Addr, block: 0 };
       //@ts-ignore
       this.dataloader[chain.chainId] = new DataLoader(
         async (calls) => {
+          //@ts-ignore
           return chain.multiCall.tryAll(calls.map((i) => this.readMultiContract(i)));
         },
         { maxBatchSize: 100 }
@@ -98,10 +102,12 @@ export class EthNetworkState implements NetworkState {
     if (args.crosschain) {
       res = await Promise.all(
         calls.map((i) => {
+          //@ts-ignore
           return this.dataloader[i.chainId].load(i);
         })
       );
     } else {
+      //@ts-ignore
       res = await this.multiCall.tryAll(calls.map((i) => this.readMultiContract(i)));
     }
 
@@ -119,5 +125,11 @@ export class EthNetworkState implements NetworkState {
 
   isAddress(address: string): boolean {
     return utils.isAddress(address);
+  }
+
+  async signMessage(message: string) {
+    await hooks.waitAccount();
+    const signature = await this.signer.signMessage(message);
+    return signature;
   }
 }
